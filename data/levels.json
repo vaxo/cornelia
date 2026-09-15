@@ -1,0 +1,12 @@
+[
+    {"level": 1,  "distance": 5000,  "gap": 320, "spawn_interval": 2100, "speed": 4.5,  "moving_obstacles": false},
+    {"level": 2,  "distance": 5500,  "gap": 305, "spawn_interval": 1980, "speed": 5.0,  "moving_obstacles": false},
+    {"level": 3,  "distance": 6000,  "gap": 292, "spawn_interval": 1850, "speed": 5.5,  "moving_obstacles": false},
+    {"level": 4,  "distance": 6500,  "gap": 280, "spawn_interval": 1720, "speed": 6.0,  "moving_obstacles": true},
+    {"level": 5,  "distance": 7000,  "gap": 268, "spawn_interval": 1600, "speed": 6.5,  "moving_obstacles": true},
+    {"level": 6,  "distance": 7500,  "gap": 258, "spawn_interval": 1500, "speed": 7.0,  "moving_obstacles": true},
+    {"level": 7,  "distance": 8000,  "gap": 248, "spawn_interval": 1400, "speed": 7.5,  "moving_obstacles": true},
+    {"level": 8,  "distance": 8500,  "gap": 238, "spawn_interval": 1300, "speed": 8.0,  "moving_obstacles": true},
+    {"level": 9,  "distance": 9000,  "gap": 228, "spawn_interval": 1200, "speed": 8.8,  "moving_obstacles": true},
+    {"level": 10, "distance": 10000, "gap": 220, "spawn_interval": 1100, "speed": 9.5,  "moving_obstacles": true}
+]

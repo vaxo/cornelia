@@ -1,0 +1,197 @@
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
+FPS = 60
+
+# Night sky / background colors
+SKY_TOP = (5, 8, 25)
+SKY_BOT = (15, 22, 55)
+BUILDING_FAR = (12, 15, 38)
+BUILDING_MID = (18, 22, 50)
+BUILDING_NEAR = (22, 28, 62)
+WINDOW_GLOW = (255, 220, 100)
+WINDOW_OFF = (20, 25, 45)
+
+# UI colors
+UI_BG = (10, 14, 38)
+UI_PANEL = (20, 28, 60)
+UI_TEXT = (210, 220, 255)
+UI_TEXT_DIM = (130, 140, 180)
+UI_ACCENT = (90, 140, 255)
+UI_ACCENT2 = (50, 200, 160)
+UI_BUTTON = (30, 45, 90)
+UI_BUTTON_HOVER = (55, 80, 150)
+UI_BUTTON_BORDER = (70, 100, 180)
+UI_WHITE = (240, 240, 255)
+UI_GOLD = (255, 195, 40)
+UI_RED = (220, 60, 60)
+UI_GREEN = (50, 200, 100)
+UI_LOCKED = (60, 60, 80)
+
+# Obstacle
+OBSTACLE_COLOR = (75, 80, 92)
+OBSTACLE_EDGE = (55, 60, 72)
+OBSTACLE_STRIPE = (88, 93, 105)
+
+# Ground
+GROUND_COLOR = (18, 22, 45)
+GROUND_LINE = (30, 38, 70)
+
+# Day mode (daytime city with sun)
+SKY_TOP_DAY = (92, 158, 228)
+SKY_BOT_DAY = (196, 224, 246)
+BUILDING_FAR_DAY = (150, 172, 202)
+BUILDING_MID_DAY = (128, 152, 186)
+BUILDING_NEAR_DAY = (104, 130, 168)
+WINDOW_DAY_LIT = (222, 238, 250)     # glass catching the light
+WINDOW_DAY_OFF = (78, 104, 140)
+GROUND_COLOR_DAY = (70, 82, 108)
+GROUND_LINE_DAY = (110, 124, 156)
+SUN_CORE = (255, 246, 205)
+SUN_GLOW = (255, 224, 140)
+
+# Car
+CAR_WINDOW = (90, 130, 195)
+CAR_WHEEL = (25, 25, 30)
+CAR_WHEEL_RIM = (120, 125, 135)
+CAR_HEADLIGHT = (255, 245, 160)
+CAR_TAILLIGHT = (255, 50, 50)
+CAR_UNDERSIDE = (15, 15, 20)
+
+# Car model colors [body, roof, stripe]
+CAR_PALETTE = {
+    "camry": {
+        "ნაცრისფერი":   [(130,130,135), (100,100,105), (90,90,95)],
+        "წითელი":       [(185,45,45),   (150,35,35),   (120,25,25)],
+        "ლურჯი":        [(40,85,185),   (30,65,150),   (20,50,120)],
+        "მწვანე":       [(35,150,70),   (25,115,55),   (18,85,40)],
+        "ყვითელი":      [(215,190,40),  (175,155,30),  (140,120,20)],
+        "შავი":         [(25,25,30),    (15,15,20),    (10,10,15)],
+        "თეთრი":        [(225,225,235), (205,205,215), (185,185,195)],
+    },
+    "sport": {
+        "ნარინჯისფერი": [(220,80,30),   (185,60,20),   (150,45,15)],
+        "ლურჯი":        [(30,70,210),   (20,55,170),   (15,40,130)],
+        "მწვანე":       [(40,190,100),  (30,150,80),   (22,115,60)],
+        "ოქროსფერი":    [(200,165,30),  (165,130,22),  (130,100,15)],
+        "იისფერი":      [(150,60,200),  (120,45,165),  (90,32,130)],
+        "შავი":         [(20,20,25),    (12,12,17),    (8,8,12)],
+        "თეთრი":        [(235,235,245), (215,215,225), (195,195,205)],
+    },
+    "retro": {
+        "ყავისფერი":    [(165,100,40),  (130,78,28),   (100,58,18)],
+        "ღია ლურჯი":   [(80,140,200),  (60,110,165),  (45,85,130)],
+        "ბირთვული":    [(60,175,130),  (45,140,100),  (32,108,75)],
+        "ქარვისფერი":  [(200,165,85),  (165,130,65),  (130,100,48)],
+        "ვარდისფერი":  [(210,120,150), (175,90,120),  (140,65,92)],
+        "მუქი":        [(50,42,32),    (38,32,22),    (28,22,14)],
+        "ლომური":      [(220,205,170), (185,172,140), (150,138,108)],
+    },
+    # Flying characters. Triple = [body, accent(cape/fins/wing), detail(emblem/nose)]
+    "hero": {
+        "წითელი":   [(200,45,45),   (45,70,190),   (255,215,60)],
+        "ლურჯი":    [(45,85,200),   (200,45,45),   (255,215,60)],
+        "მწვანე":   [(40,165,80),   (25,25,32),    (235,235,240)],
+        "შავი":     [(38,38,50),    (95,25,125),   (185,185,195)],
+        "ოქროსფერი":[(215,175,45),  (60,40,120),   (255,255,255)],
+    },
+    "rocket": {
+        "წითელი":   [(210,60,50),   (240,200,60),  (235,235,240)],
+        "ლურჯი":    [(50,90,205),   (235,235,240), (245,120,45)],
+        "თეთრი":    [(230,230,238), (210,60,50),   (60,72,95)],
+        "მწვანე":   [(40,170,110),  (240,240,245), (240,200,60)],
+        "იისფერი":  [(150,70,200),  (240,240,245), (255,210,90)],
+    },
+    "plane": {
+        "თეთრი":     [(226,228,236), (210,60,60),   (60,90,160)],
+        "წითელი":    [(200,60,55),   (240,240,245), (42,42,54)],
+        "ლურჯი":     [(60,100,190),  (240,240,245), (250,200,60)],
+        "ყვითელი":   [(225,190,50),  (60,72,95),    (210,60,60)],
+        "ნაცრისფერი":[(140,145,158), (90,96,112),   (210,80,60)],
+    },
+    # Bibble (the fluffy pixie). Triple = [fur, accent(mohawk/belly/arms/feet), detail]
+    "bibble": {
+        "ცისფერი":   [(95,205,205),  (200,70,180),  (255,255,255)],  # teal fur + magenta mohawk (reference)
+        "ვარდისფერი":[(245,175,205), (150,80,190),  (255,255,255)],  # pink fur + purple
+        "იისფერი":   [(185,155,235), (95,190,205),  (255,255,255)],  # lilac fur + teal
+        "მწვანე":    [(150,215,150), (210,90,150),  (255,255,255)],  # green fur + pink
+        "ყვითელი":   [(248,225,140), (120,150,235), (255,255,255)],  # yellow fur + blue
+    },
+}
+CAR_MODEL_NAMES = ["camry", "sport", "retro", "hero", "rocket", "plane", "bibble"]
+CAR_MODEL_DISPLAY = {
+    "camry": "Toyota Camry",
+    "sport": "სპორტ კარი",
+    "retro": "რეტრო კარი",
+    "hero": "სუპერგმირი",
+    "rocket": "რაკეტა",
+    "plane": "თვითმფრინავი",
+    "bibble": "ბიბლი",
+}
+
+# Physics
+GRAVITY = 0.42
+LIFT_FORCE = -9.2
+MAX_FALL_SPEED = 13.0
+MAX_RISE_SPEED = -12.0
+CAR_X_POS = 250
+
+# Game speed
+INITIAL_GAME_SPEED = 4.5
+MAX_GAME_SPEED = 11.5
+SPEED_RAMP_RATE = 0.00018
+
+# Obstacles
+OBSTACLE_WIDTH = 82
+OBSTACLE_INITIAL_GAP = 320
+OBSTACLE_MIN_GAP = 210
+INITIAL_SPAWN_INTERVAL = 2100
+MIN_SPAWN_INTERVAL = 720
+OBSTACLE_MIN_Y_EDGE = 60
+OBSTACLE_MAX_Y_EDGE = 60
+
+# Reachability: the vertical distance between one gap and the next is capped so
+# the car can always fly from one to the other in the time between them — no
+# more "impossible unless you phase" jumps. The cap = a conservative sustained
+# climb speed (px/frame) times the number of frames until the next obstacle
+# arrives (spawn_interval / frame_time). See ObstacleManager._pick_gap_y.
+REACHABLE_VSPEED = 4.2        # px/frame the car can comfortably sustain
+MIN_REACHABLE_DELTA = 170     # never tighter than this, so it still varies
+MOVING_AMPLITUDE_MARGIN = 90  # room reserved for a moving gap's oscillation
+
+# Moving obstacles - appear after this score/level
+MOVING_SCORE_THRESHOLD = 50
+MOVING_LEVEL_THRESHOLD = 4
+
+# Scoring
+SCORE_PER_PASS = 10
+COMBO_BASE_BONUS = 5
+
+# Levels
+NUM_LEVELS = 10
+LEVEL_DISTANCE = 6000
+
+# Screen shake
+SHAKE_DURATION = 520
+SHAKE_INTENSITY = 9
+
+# Particle
+SPARK_COLORS = [(255,200,50),(255,150,30),(255,85,20),(210,45,10)]
+MAX_SPARKS = 35
+RAIN_COUNT = 200
+RAIN_COLOR = (140, 165, 220)
+FOG_ALPHA = 55
+LIGHTNING_FLASH_DURATION = 120
+
+# HUD
+HUD_FONT_LG = 56
+HUD_FONT_MD = 38
+HUD_FONT_SM = 26
+HUD_PAD = 22
+
+# Menu
+BTN_W = 340
+BTN_H = 64
+BTN_SPACING = 82
+TITLE_FONT_SIZE = 96
+BTN_FONT_SIZE = 38
+SUBTITLE_FONT_SIZE = 30
