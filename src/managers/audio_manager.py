@@ -45,7 +45,8 @@ class AudioManager:
 
     def _load_sounds(self):
         sfx_files = {
-            "crash": "crash.wav",
+            # Collisions scream like a goat; the old crash.wav is still on disk
+            "crash": "goat_scream.wav",
             "score": "score.wav",
             "click": "click.wav",
             "thunder": "thunder.wav",
@@ -53,6 +54,8 @@ class AudioManager:
             "shield": "shield.wav",
             "shield_break": "shield_break.wav",
             "extra_life": "extra_life.wav",
+            "chicken": "chicken.wav",
+            "chick": "chick.wav",
             "engine": "engine_loop.ogg",
         }
         for key, fname in sfx_files.items():
@@ -154,7 +157,7 @@ class AudioManager:
             self.play_music()
 
     def set_music_volume(self, vol):
-        self.settings.music_volume = max(0.0, min(1.0, vol))
+        self.settings.music_volume = round(max(0.0, min(1.0, vol)), 2)
         for ch in self._music_channels:
             try:
                 ch.set_volume(self.settings.music_volume)
@@ -162,7 +165,7 @@ class AudioManager:
                 pass
 
     def set_sfx_volume(self, vol):
-        self.settings.sfx_volume = max(0.0, min(1.0, vol))
+        self.settings.sfx_volume = round(max(0.0, min(1.0, vol)), 2)
         for s in self._sfx.values():
             try:
                 s.set_volume(self.settings.sfx_volume)

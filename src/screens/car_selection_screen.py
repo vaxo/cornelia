@@ -87,7 +87,9 @@ class CarSelectionScreen(BaseScreen):
                 self.game.scene.change("main_menu")
 
     def update(self, dt):
-        pass
+        # Keep the preview flapping so wing/arm animation is visible before you pick
+        if self._preview:
+            self._preview._update_anim(dt)
 
     def render(self, surface):
         surface.fill((8, 12, 30))
@@ -105,7 +107,7 @@ class CarSelectionScreen(BaseScreen):
             pw = self._preview.w * 2
             ph = self._preview.h * 2
             preview_surf = pygame.Surface((pw, ph), pygame.SRCALPHA)
-            scale = pygame.transform.scale(self._preview._surf, (pw, ph))
+            scale = pygame.transform.scale(self._preview._current_frame(), (pw, ph))
             preview_surf.blit(scale, (0, 0))
             surface.blit(preview_surf, (SCREEN_WIDTH // 2 - pw // 2, py + (200 - ph) // 2))
 

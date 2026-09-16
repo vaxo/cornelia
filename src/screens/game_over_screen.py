@@ -27,11 +27,27 @@ class GameOverScreen(BaseScreen):
             Button(cx, cy + 20 + BTN_SPACING * 2, BTN_W, BTN_H, "მთავარი მენიუ", self.assets),
         ]
 
+    # Keys are ignored for a moment after the popup opens, so a SPACE you were
+    # mashing as you crashed can't skip straight past the score.
+    INPUT_LOCK_MS = 350
+
     def on_enter(self, score=0, best=0, mode="endless", level=1, **kwargs):
         self._score = score
         self._best = best
         self._mode = mode
         self._level = level
+        self._input_lock = self.INPUT_LOCK_MS
+
+    def update(self, dt):
+        if self._input_lock > 0:
+            self._input_lock -= dt
+
+    def _restart(self):
+        self.audio.play_sfx("click")
+        if self._mode == "level":
+            self.game.scene.change("level_game", level=self._level)
+        else:
+            self.game.scene.change("endless")
 
     def _get_buttons(self):
         return self.buttons_level if self._mode == "level" else self.buttons_endless
@@ -41,15 +57,21 @@ class GameOverScreen(BaseScreen):
         for btn in self._get_buttons():
             btn.update(mouse_pos)
         for event in events:
+            # SPACE / ENTER plays again straight away; ESC backs out to the menu
+            if event.type == pygame.KEYDOWN and self._input_lock <= 0:
+                if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
+                    self._restart()
+                    return
+                if event.key == pygame.K_ESCAPE:
+                    self.audio.play_sfx("click")
+                    self.game.scene.change("main_menu")
+                    return
             for btn in self._get_buttons():
                 if btn.handle_event(event):
-                    self.audio.play_sfx("click")
                     if btn.text in ("თავიდან", "ხელახლა", "თავიდან დონე"):
-                        if self._mode == "level":
-                            self.game.scene.change("level_game", level=self._level)
-                        else:
-                            self.game.scene.change("endless")
+                        self._restart()
                     elif btn.text == "მთავარი მენიუ":
+                        self.audio.play_sfx("click")
                         self.game.scene.change("main_menu")
 
     def render(self, surface):
@@ -57,7 +79,7 @@ class GameOverScreen(BaseScreen):
         overlay.fill((5, 5, 15, 200))
         surface.blit(overlay, (0, 0))
 
-        pw, ph = 700, 520 if self._mode == "level" else 400
+        pw, ph = 700, 560 if self._mode == "level" else 440
         px = SCREEN_WIDTH // 2 - pw // 2
         py = SCREEN_HEIGHT // 2 - ph // 2 - 20
         pygame.draw.rect(surface, UI_PANEL, (px, py, pw, ph), border_radius=16)
@@ -81,6 +103,10 @@ class GameOverScreen(BaseScreen):
         if new_best:
             draw_star(surface, bx - 26, py + 188, 16, UI_GOLD)
             draw_star(surface, bx + best_txt.get_width() + 26, py + 188, 16, UI_GOLD)
+
+        # Keyboard hint: "press SPACE to play again"
+        hint = self.assets.render_text("დააჭირე SPACE გასაგრძელებლად", 26, UI_ACCENT)
+        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, py + 218))
 
         for btn in self._get_buttons():
             btn.render(surface)

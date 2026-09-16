@@ -1,6 +1,7 @@
 import pygame
 from src.screens.base_screen import BaseScreen
 from src.screens.powerup_effects import PowerupEffectsMixin
+from src.screens.character_voice import CharacterVoiceMixin
 from src.entities.player_car import PlayerCar
 from src.managers.background_manager import BackgroundManager
 from src.managers.obstacle_manager import ObstacleManager
@@ -19,7 +20,7 @@ from config.constants import (
 import random
 
 
-class EndlessScreen(PowerupEffectsMixin, BaseScreen):
+class EndlessScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
     def __init__(self, game):
         super().__init__(game)
         self._setup()
@@ -36,6 +37,7 @@ class EndlessScreen(PowerupEffectsMixin, BaseScreen):
         self.hud = HUD(self.assets, mode="endless")
         self.powerup_mgr = PowerUpManager()
         self.init_effects()
+        self.init_voice()
         self.particles = []
         self._shake_timer = 0
         self._started = False
@@ -111,6 +113,7 @@ class EndlessScreen(PowerupEffectsMixin, BaseScreen):
 
         self.bg.update(speed)
         self.car.update(dt)
+        self.tick_voice(dt, self.car)
         self.obs_mgr.update(dt, speed, self.effect_speed_mult())
         self.powerup_mgr.update(dt, speed, self.obs_mgr)
         self.weather.update(dt)
@@ -120,8 +123,8 @@ class EndlessScreen(PowerupEffectsMixin, BaseScreen):
 
         passed = self.obs_mgr.check_passed(self.car.x + self.car.w)
         for _ in range(passed):
+            # Scoring a gate is silent on purpose - no chime on every pass
             self.score_mgr.on_pass(self.effect_score_mult())
-            self.audio.play_sfx("score")
 
         if not self.is_invulnerable() and (
                 CollisionManager.check_obstacle(self.car, self.obs_mgr) or

@@ -7,6 +7,7 @@ from config.constants import (
     CAR_PALETTE, CAR_MODEL_NAMES,
     CAR_WINDOW, CAR_WHEEL, CAR_WHEEL_RIM,
     CAR_HEADLIGHT, CAR_TAILLIGHT, CAR_UNDERSIDE,
+    CHICKEN_BEAK, CHICKEN_BEAK_DARK, CHICKEN_LEG, CHICKEN_EYE,
 )
 from src.utils.math_utils import clamp
 
@@ -18,6 +19,23 @@ CAR_SIZES = {
     "rocket": (116, 48),
     "plane": (116, 48),
     "bibble": (120, 100),
+    "chicken": (112, 90),
+    "chick": (82, 72),
+}
+
+# Characters with a voice call out on a timer while you fly (see
+# CharacterVoiceMixin); the value is the SFX key in AudioManager.
+CHARACTER_VOICE = {
+    "chicken": "chicken",
+    "chick": "chick",
+}
+
+# How fast each flapping character beats, relative to the base flap rate.
+# Smaller wings beat faster, so the chick is the quickest.
+FLAP_RATE = {
+    "bibble": 1.0,
+    "chicken": 1.6,
+    "chick": 2.3,
 }
 
 
@@ -36,7 +54,11 @@ class PlayerCar:
             "plane": (220, 235, 255),
             "hero": (120, 170, 255),
             "bibble": (200, 240, 255),
+            "chicken": (255, 238, 205),
+            "chick": (255, 246, 200),
         }.get(model, (150, 180, 240))
+        self._flap_rate = FLAP_RATE.get(model, 1.0)
+        self.voice = CHARACTER_VOICE.get(model)   # SFX key, None for the cars
         # Characters that flap have a pre-rendered frame list (see _build_surface);
         # single-surface models leave this None and use self._surf directly.
         self._frames = None
@@ -50,16 +72,23 @@ class PlayerCar:
         body_col, roof_col, stripe_col = colors[0], colors[1], colors[2]
         w, h = self.w, self.h
 
-        # Bibble flaps its arms, so it's pre-rendered as a small cycle of frames
-        # (arms sweep down -> up -> down) that render() cycles through. All other
-        # models keep the single-surface fast path untouched.
-        if self.model == "bibble":
+        # Flapping characters (Bibble's arms, the chicken's and chick's wings) are
+        # pre-rendered as a small cycle of frames that render() cycles through:
+        # the limb sweeps down -> up -> down over the cycle. All other models keep
+        # the single-surface fast path untouched.
+        flap_drawers = {
+            "bibble": self._draw_bibble,
+            "chicken": self._draw_chicken,
+            "chick": self._draw_chick,
+        }
+        flap_drawer = flap_drawers.get(self.model)
+        if flap_drawer:
             self._frames = []
-            n = 8
+            n = 10
             for i in range(n):
-                arm_t = math.sin(2 * math.pi * i / n)  # -1 .. +1 .. -1 over the cycle
+                flap_t = math.sin(2 * math.pi * i / n)  # -1 .. +1 .. -1 over the cycle
                 frame = pygame.Surface((w, h), pygame.SRCALPHA)
-                self._draw_bibble(frame, w, h, body_col, roof_col, stripe_col, arm_t)
+                flap_drawer(frame, w, h, body_col, roof_col, stripe_col, flap_t)
                 self._apply_shading(frame)
                 self._frames.append(frame)
             # frame 0 is the neutral mid-flap pose; keep _surf pointing at it so the
@@ -380,6 +409,194 @@ class PlayerCar:
                          (cx - int(r * 0.05), sm_y + int(r * 0.02),
                           max(2, int(r * 0.1)), max(2, int(r * 0.08))), border_radius=1)
 
+    def _draw_bird_wing(self, surf, pivot, length, angle, col, edge, feathers=4):
+        """One wing, rotated `angle` radians around `pivot` (negative = raised,
+        positive = swept down). The wing points back (toward -x on screen) from
+        the shoulder, so the same helper serves the chicken and the chick."""
+        px, py = pivot
+        ca, sa = math.cos(angle), math.sin(angle)
+        chord = max(6, int(length * 0.36))
+
+        def P(x, y):
+            # local (x = out along the span, y = down across the chord) -> screen
+            return (int(px - (x * ca - y * sa)), int(py + (x * sa + y * ca)))
+
+        outline = [
+            P(0, -chord * 0.45),
+            P(length * 0.38, -chord * 0.62),
+            P(length * 0.78, -chord * 0.28),
+            P(length, chord * 0.22),
+            P(length * 0.70, chord * 0.80),
+            P(length * 0.32, chord * 0.86),
+            P(0, chord * 0.58),
+        ]
+        pygame.draw.polygon(surf, col, outline)
+        pygame.draw.polygon(surf, edge, outline, 2)
+        # primary feathers fanning out toward the trailing edge
+        for i in range(feathers):
+            f = 0.40 + 0.55 * (i / max(1, feathers - 1))
+            pygame.draw.line(surf, edge,
+                             P(length * f * 0.50, -chord * 0.05),
+                             P(length * f, chord * (0.84 - 0.55 * f)), 2)
+
+    def _draw_chicken(self, surf, w, h, feathers, wing_col, comb, wing_t=0.0):
+        """Side-on hen in flight. `wing_t` in [-1, 1] drives the wingbeat:
+        -1 = wings raised high, +1 = swept down through the power stroke."""
+        body = feathers
+        body_hi = tuple(min(255, c + 20) for c in body)
+        wing_dark = tuple(max(0, c - 42) for c in wing_col)
+        wing_edge = tuple(max(0, c - 24) for c in wing_dark)
+
+        cx, cy = int(w * 0.44), int(h * 0.56)
+        bw, bh = int(w * 0.62), int(h * 0.52)
+        wing_len = int(w * 0.46)
+        ang_near = wing_t * 0.80
+        ang_far = wing_t * 0.66 + 0.10   # the far wing trails a touch behind
+
+        # --- far wing (behind everything, darker so it reads as depth) ---
+        self._draw_bird_wing(surf, (cx + int(w * 0.06), cy - int(h * 0.20)),
+                             int(wing_len * 0.92), ang_far, wing_dark, wing_edge, 3)
+
+        # --- tail feathers fanning up and back ---
+        tx, ty = cx - int(bw * 0.48), cy - int(h * 0.02)
+        for i, (dx, dy) in enumerate(((-0.30, -0.34), (-0.35, -0.16), (-0.30, 0.02))):
+            pygame.draw.polygon(surf, wing_col if i % 2 == 0 else wing_dark, [
+                (tx + int(w * 0.05), ty - int(h * 0.06)),
+                (tx + int(w * dx), ty + int(h * dy)),
+                (tx + int(w * (dx + 0.11)), ty + int(h * (dy + 0.17)))])
+
+        # --- legs tucked back under the body ---
+        leg_w = max(3, int(w * 0.035))
+        for off in (-0.06, 0.06):
+            hip = (cx + int(w * off), cy + int(bh * 0.38))
+            foot = (hip[0] - int(w * 0.05), hip[1] + int(h * 0.13))
+            pygame.draw.line(surf, CHICKEN_LEG, hip, foot, leg_w)
+            for ty2 in (-0.04, 0.0, 0.04):
+                pygame.draw.line(surf, CHICKEN_LEG, foot,
+                                 (foot[0] - int(w * 0.09), foot[1] + int(h * ty2)), 3)
+
+        # --- neck + body ---
+        pygame.draw.ellipse(surf, body, (cx + int(w * 0.10), cy - int(h * 0.30),
+                                         int(w * 0.26), int(h * 0.34)))
+        pygame.draw.ellipse(surf, body, (cx - bw // 2, cy - bh // 2, bw, bh))
+        pygame.draw.ellipse(surf, body_hi, (cx + int(bw * 0.04), cy - int(bh * 0.24),
+                                            int(bw * 0.44), int(bh * 0.62)))
+
+        # --- head ---
+        hx, hy = cx + int(w * 0.30), cy - int(h * 0.28)
+        hr = int(w * 0.135)
+        pygame.draw.circle(surf, body, (hx, hy), hr)
+
+        # --- comb (three bumps) and wattle ---
+        for ox, oy, rr in ((-0.45, -0.86, 0.34), (0.02, -1.02, 0.40), (0.46, -0.82, 0.30)):
+            pygame.draw.circle(surf, comb, (hx + int(hr * ox), hy + int(hr * oy)),
+                               max(3, int(hr * rr)))
+        pygame.draw.circle(surf, comb, (hx + int(hr * 0.62), hy + int(hr * 0.95)),
+                           max(3, int(hr * 0.30)))
+
+        # --- beak ---
+        by = hy + int(hr * 0.12)
+        pygame.draw.polygon(surf, CHICKEN_BEAK, [
+            (hx + int(hr * 0.55), by - int(hr * 0.34)),
+            (hx + int(hr * 0.55), by + int(hr * 0.34)),
+            (hx + int(hr * 1.80), by)])
+        pygame.draw.line(surf, CHICKEN_BEAK_DARK,
+                         (hx + int(hr * 0.60), by), (hx + int(hr * 1.72), by), 2)
+
+        # --- eye ---
+        ex, ey = hx + int(hr * 0.30), hy - int(hr * 0.22)
+        pygame.draw.circle(surf, (255, 255, 255), (ex, ey), max(3, int(hr * 0.32)))
+        pygame.draw.circle(surf, CHICKEN_EYE, (ex, ey), max(2, int(hr * 0.18)))
+        pygame.draw.circle(surf, (255, 255, 255), (ex - 1, ey - 2), max(1, int(hr * 0.09)))
+
+        # --- near wing, in front of the body ---
+        self._draw_bird_wing(surf, (cx + int(w * 0.10), cy - int(h * 0.10)),
+                             wing_len, ang_near, wing_col, wing_dark, 4)
+
+    def _draw_chick(self, surf, w, h, down, wing_col, cheek, wing_t=0.0):
+        """Fluffy baby chick: two down puffs, stubby wings that beat about twice
+        as fast as the hen's (see FLAP_RATE). `wing_t` works as in _draw_chicken."""
+        down_hi = tuple(min(255, c + 22) for c in down)
+        wing_dark = tuple(max(0, c - 58) for c in wing_col)
+        wing_edge = tuple(max(0, c - 30) for c in wing_dark)
+
+        cx, cy = int(w * 0.44), int(h * 0.56)
+        r = int(min(w, h) * 0.34)
+        wing_len = int(w * 0.36)
+        ang_near = wing_t * 0.95        # stubby wings swing through a wider arc
+        ang_far = wing_t * 0.78 + 0.12
+
+        # --- far wing ---
+        self._draw_bird_wing(surf, (cx + int(w * 0.06), cy - int(h * 0.12)),
+                             int(wing_len * 0.90), ang_far, wing_dark, wing_edge, 3)
+
+        # --- tail: two little feathers fanning back ---
+        tx, ty = cx - int(r * 0.85), cy - int(h * 0.02)
+        for i, (dx, dy) in enumerate(((-0.17, -0.20), (-0.19, -0.04))):
+            pygame.draw.polygon(surf, wing_col if i % 2 == 0 else wing_dark, [
+                (tx + int(w * 0.05), ty - int(h * 0.06)),
+                (tx + int(w * dx), ty + int(h * dy)),
+                (tx + int(w * (dx + 0.10)), ty + int(h * (dy + 0.15)))])
+
+        # --- legs ---
+        for off in (-0.05, 0.05):
+            hip = (cx + int(w * off), cy + int(r * 0.78))
+            foot = (hip[0] - int(w * 0.04), hip[1] + int(h * 0.10))
+            pygame.draw.line(surf, CHICKEN_LEG, hip, foot, max(3, int(w * 0.035)))
+            for ty2 in (-0.035, 0.0, 0.035):
+                pygame.draw.line(surf, CHICKEN_LEG, foot,
+                                 (foot[0] - int(w * 0.08), foot[1] + int(h * ty2)), 2)
+
+        # --- body: down bumps around the rim, then the main puff ---
+        for i in range(14):
+            ang = 2 * math.pi * i / 14
+            pygame.draw.circle(surf, down,
+                               (cx + int(math.cos(ang) * r * 0.90),
+                                cy + int(math.sin(ang) * r * 0.90)), int(r * 0.22))
+        pygame.draw.circle(surf, down, (cx, cy), r)
+        pygame.draw.circle(surf, down_hi, (cx + int(r * 0.30), cy + int(r * 0.10)), int(r * 0.42))
+
+        # --- head ---
+        hx, hy = cx + int(w * 0.24), cy - int(h * 0.26)
+        hr = int(r * 0.66)
+        for i in range(10):
+            ang = 2 * math.pi * i / 10
+            pygame.draw.circle(surf, down,
+                               (hx + int(math.cos(ang) * hr * 0.88),
+                                hy + int(math.sin(ang) * hr * 0.88)), int(hr * 0.24))
+        pygame.draw.circle(surf, down, (hx, hy), hr)
+
+        # --- head tuft (three little down feathers) ---
+        for fx, fh in ((-0.42, 0.45), (0.0, 0.65), (0.42, 0.42)):
+            bx = hx + int(fx * hr)
+            pygame.draw.polygon(surf, down_hi, [
+                (bx - int(hr * 0.18), hy - int(hr * 0.80)),
+                (bx + int(hr * 0.18), hy - int(hr * 0.80)),
+                (bx + int(fx * hr * 0.30), hy - int(hr * (0.80 + fh * 0.55)))])
+
+        # --- cheek blush ---
+        pygame.draw.circle(surf, cheek, (hx + int(hr * 0.10), hy + int(hr * 0.44)),
+                           max(2, int(hr * 0.24)))
+
+        # --- eye ---
+        ex, ey = hx + int(hr * 0.34), hy - int(hr * 0.14)
+        pygame.draw.circle(surf, (255, 255, 255), (ex, ey), max(3, int(hr * 0.32)))
+        pygame.draw.circle(surf, CHICKEN_EYE, (ex, ey), max(2, int(hr * 0.20)))
+        pygame.draw.circle(surf, (255, 255, 255), (ex - 1, ey - 2), max(1, int(hr * 0.09)))
+
+        # --- little beak ---
+        by = hy + int(hr * 0.18)
+        pygame.draw.polygon(surf, CHICKEN_BEAK, [
+            (hx + int(hr * 0.62), by - int(hr * 0.28)),
+            (hx + int(hr * 0.62), by + int(hr * 0.28)),
+            (hx + int(hr * 1.55), by)])
+        pygame.draw.line(surf, CHICKEN_BEAK_DARK,
+                         (hx + int(hr * 0.66), by), (hx + int(hr * 1.46), by), 2)
+
+        # --- near wing ---
+        self._draw_bird_wing(surf, (cx + int(w * 0.10), cy - int(h * 0.04)),
+                             wing_len, ang_near, wing_col, wing_dark, 3)
+
     def _update_rects(self):
         # Slightly inset hitbox for fairness
         pad = 6
@@ -415,7 +632,7 @@ class PlayerCar:
         Beat faster while rising so it reads as effort producing lift."""
         if not self._frames:
             return
-        freq = 2.6 if self.vel_y < 0 else 1.4  # flaps per second
+        freq = (2.6 if self.vel_y < 0 else 1.4) * self._flap_rate  # flaps per second
         self._anim_phase = (self._anim_phase + freq * dt / 1000.0) % 1.0
 
     def _current_frame(self):
@@ -469,5 +686,7 @@ class PlayerCar:
         self.model = model
         self.color_name = color
         self.w, self.h = CAR_SIZES.get(model, (110, 50))
+        self._flap_rate = FLAP_RATE.get(model, 1.0)
+        self.voice = CHARACTER_VOICE.get(model)
         self._build_surface()
         self._update_rects()

@@ -2,12 +2,13 @@ import pygame
 import math
 from src.screens.base_screen import BaseScreen
 from src.screens.powerup_effects import PowerupEffectsMixin
+from src.screens.character_voice import CharacterVoiceMixin
 from src.entities.player_car import PlayerCar
 from src.managers.background_manager import BackgroundManager
 from src.managers.obstacle_manager import ObstacleManager
 from src.managers.collision_manager import CollisionManager
 from src.managers.score_manager import ScoreManager
-from src.managers.difficulty_manager import DifficultyManager
+from src.managers.difficulty_manager import DifficultyManager, spacing_interval
 from src.managers.level_manager import LevelManager
 from src.managers.weather_manager import WeatherManager
 from src.managers.powerup_manager import PowerUpManager
@@ -25,7 +26,7 @@ TUNNEL_W = 180
 TUNNEL_H = SCREEN_HEIGHT
 
 
-class LevelGameScreen(PowerupEffectsMixin, BaseScreen):
+class LevelGameScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
     def __init__(self, game):
         super().__init__(game)
         self.level_mgr = LevelManager(game.save)
@@ -60,6 +61,7 @@ class LevelGameScreen(PowerupEffectsMixin, BaseScreen):
         self.hud = HUD(self.assets, mode="level")
         self.powerup_mgr = PowerUpManager()
         self.init_effects()
+        self.init_voice()
         self.particles = []
         self._shake_timer = 0
         self._started = False
@@ -80,6 +82,8 @@ class LevelGameScreen(PowerupEffectsMixin, BaseScreen):
         gap = data.get("gap", 265)
         interval = data.get("spawn_interval", 2100)
         speed = data.get("speed", 4.5)
+        # Keep the pairs from bunching up at this level's speed (see spacing_interval)
+        interval = max(interval, spacing_interval(speed))
         use_moving = data.get("moving_obstacles", False)
         self.diff_mgr.reset(speed=speed, gap=gap, interval=interval)
         self.obs_mgr.reset(gap=gap, spawn_interval=interval, use_moving=use_moving)
@@ -144,6 +148,7 @@ class LevelGameScreen(PowerupEffectsMixin, BaseScreen):
 
         self.bg.update(speed)
         self.car.update(dt)
+        self.tick_voice(dt, self.car)
         self.obs_mgr.update(dt, speed, self.effect_speed_mult())
         self.powerup_mgr.update(dt, speed, self.obs_mgr)
         self.weather.update(dt)
@@ -168,8 +173,8 @@ class LevelGameScreen(PowerupEffectsMixin, BaseScreen):
 
         passed = self.obs_mgr.check_passed(self.car.x + self.car.w)
         for _ in range(passed):
+            # Scoring a gate is silent on purpose - no chime on every pass
             self.score_mgr.on_pass(self.effect_score_mult())
-            self.audio.play_sfx("score")
 
         if not self.is_invulnerable() and (
                 CollisionManager.check_obstacle(self.car, self.obs_mgr) or

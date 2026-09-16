@@ -57,6 +57,12 @@ CAR_HEADLIGHT = (255, 245, 160)
 CAR_TAILLIGHT = (255, 50, 50)
 CAR_UNDERSIDE = (15, 15, 20)
 
+# Poultry (chicken / chick) shared colors
+CHICKEN_BEAK = (248, 176, 48)
+CHICKEN_BEAK_DARK = (206, 132, 28)
+CHICKEN_LEG = (236, 152, 40)
+CHICKEN_EYE = (24, 24, 34)
+
 # Car model colors [body, roof, stripe]
 CAR_PALETTE = {
     "camry": {
@@ -116,8 +122,24 @@ CAR_PALETTE = {
         "მწვანე":    [(150,215,150), (210,90,150),  (255,255,255)],  # green fur + pink
         "ყვითელი":   [(248,225,140), (120,150,235), (255,255,255)],  # yellow fur + blue
     },
+    # Chicken (grown hen). Triple = [feathers, wing/tail feathers, comb & wattle]
+    "chicken": {
+        "თეთრი":      [(240,240,246), (206,209,220), (216,52,52)],
+        "ყავისფერი":  [(180,114,58),  (140,82,40),   (212,52,50)],
+        "წითელი":     [(176,70,44),   (134,48,30),   (228,72,58)],
+        "ოქროსფერი":  [(230,188,82),  (196,150,52),  (216,60,56)],
+        "შავი":       [(56,56,68),    (36,36,48),    (222,62,58)],
+    },
+    # Chick (the fluffy baby). Triple = [down, wing down, cheeks]
+    "chick": {
+        "ყვითელი":     [(252,222,96),  (234,192,66),  (255,164,150)],
+        "ნარინჯისფერი":[(250,186,88),  (226,150,54),  (255,150,140)],
+        "თეთრი":       [(246,246,250), (214,216,226), (255,168,158)],
+        "ვარდისფერი":  [(250,192,212), (226,158,186), (255,150,160)],
+        "ცისფერი":     [(178,218,248), (142,186,226), (255,158,160)],
+    },
 }
-CAR_MODEL_NAMES = ["camry", "sport", "retro", "hero", "rocket", "plane", "bibble"]
+CAR_MODEL_NAMES = ["camry", "sport", "retro", "hero", "rocket", "plane", "bibble", "chicken", "chick"]
 CAR_MODEL_DISPLAY = {
     "camry": "Toyota Camry",
     "sport": "სპორტ კარი",
@@ -126,6 +148,8 @@ CAR_MODEL_DISPLAY = {
     "rocket": "რაკეტა",
     "plane": "თვითმფრინავი",
     "bibble": "ბიბლი",
+    "chicken": "ქათამი",
+    "chick": "წიწილა",
 }
 
 # Physics
@@ -137,15 +161,27 @@ CAR_X_POS = 250
 
 # Game speed
 INITIAL_GAME_SPEED = 4.5
-MAX_GAME_SPEED = 11.5
+MAX_GAME_SPEED = 10.5
 SPEED_RAMP_RATE = 0.00018
 
 # Obstacles
 OBSTACLE_WIDTH = 82
-OBSTACLE_INITIAL_GAP = 320
-OBSTACLE_MIN_GAP = 210
+OBSTACLE_INITIAL_GAP = 340
+OBSTACLE_MIN_GAP = 255
 INITIAL_SPAWN_INTERVAL = 2100
-MIN_SPAWN_INTERVAL = 720
+MIN_SPAWN_INTERVAL = 900
+
+# Endless ramp: the vertical gap shrinks from INITIAL to MIN over this many
+# points (higher = gentler), and the spawn timer tightens by this many ms per
+# point. Both were steeper before and made late runs feel cramped.
+GAP_SHRINK_SCORE = 320
+SPAWN_INTERVAL_PER_SCORE = 3.5
+
+# Horizontal breathing room: consecutive obstacle pairs are kept at least this
+# many pixels apart (centre to centre, so ~OBSTACLE_WIDTH less of clear air).
+# The spawn interval is derived from it and the CURRENT speed, so the pairs stay
+# this far apart as the game speeds up instead of bunching together.
+OBSTACLE_MIN_SPACING = 620
 OBSTACLE_MIN_Y_EDGE = 60
 OBSTACLE_MAX_Y_EDGE = 60
 
