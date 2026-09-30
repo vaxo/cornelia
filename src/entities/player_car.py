@@ -38,6 +38,48 @@ FLAP_RATE = {
     "chick": 2.3,
 }
 
+# --- how hard the game runs for each character -----------------------------
+# Characters are NOT resized to balance them - a big character stays big. What
+# changes is the pace of the world around it: a bulky character fills more of
+# the gap, so the world runs slower for it (more time to read each gate), while
+# a tiny one gets a faster, twitchier world. 1.0 is the pace the levels were
+# authored at (the Camry). The same number multiplies the points a gate is
+# worth, so the quicker characters pay out more.
+CHARACTER_TEMPO = {
+    "bibble": 0.85,   # biggest body (120x100) - slowest, most forgiving
+    "chicken": 0.90,
+    "hero": 0.93,
+    "camry": 1.00,    # reference
+    "retro": 1.00,
+    "plane": 1.05,
+    "rocket": 1.08,
+    "sport": 1.08,
+    "chick": 1.15,    # tiny and quick - the sharpest ride
+}
+TEMPO_MIN, TEMPO_MAX = 0.85, 1.15
+TEMPO_REF_HITBOX_H = 52   # hitbox height that means "normal pace"
+
+
+def character_tempo(model):
+    """World pace for *model*. Unknown models (e.g. a custom-built character)
+    fall back to a size-derived value so they're never left unbalanced."""
+    if model in CHARACTER_TEMPO:
+        return CHARACTER_TEMPO[model]
+    h = CAR_SIZES.get(model, (110, 50))[1] - 12      # hitbox height
+    return clamp(1.0 + (TEMPO_REF_HITBOX_H - h) * 0.005, TEMPO_MIN, TEMPO_MAX)
+
+
+def tempo_label(tempo):
+    """Short Georgian label for the character-select screen."""
+    if tempo <= 0.95:
+        return "ტემპი: ნელი · მარტივი"
+    if tempo < 1.05:
+        return "ტემპი: ჩვეულებრივი"
+    return "ტემპი: სწრაფი · რთული"
+
+
+_PUFF_CACHE = {}
+
 
 class PlayerCar:
     def __init__(self, model="camry", color="წითელი"):
@@ -58,6 +100,7 @@ class PlayerCar:
             "chick": (255, 246, 200),
         }.get(model, (150, 180, 240))
         self._flap_rate = FLAP_RATE.get(model, 1.0)
+        self.tempo = character_tempo(model)       # world pace for this character
         self.voice = CHARACTER_VOICE.get(model)   # SFX key, None for the cars
         # Characters that flap have a pre-rendered frame list (see _build_surface);
         # single-surface models leave this None and use self._surf directly.
@@ -652,14 +695,28 @@ class PlayerCar:
             p[2] -= 0.07       # fade
         self.trail = [p for p in self.trail if p[2] > 0]
 
+    def _puff(self, radius, alpha):
+        """Cached exhaust puff. These used to be a fresh Surface per puff per
+        frame (~900 allocations a second); there are only a couple of dozen
+        distinct (radius, alpha) pairs, so they're drawn once and reused."""
+        key = (self._trail_color, radius, alpha)
+        spr = _PUFF_CACHE.get(key)
+        if spr is None:
+            r0, g0, b0 = self._trail_color
+            spr = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(spr, (r0, g0, b0, alpha), (radius, radius), radius)
+            try:
+                spr = spr.convert_alpha()
+            except pygame.error:
+                pass
+            _PUFF_CACHE[key] = spr
+        return spr
+
     def _render_trail(self, screen, shake_offset):
-        r0, g0, b0 = self._trail_color
         for x, y, life, _ in self.trail:
             r = int(9 * life) + 2
-            a = int(110 * life)
-            s = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-            pygame.draw.circle(s, (r0, g0, b0, a), (r, r), r)
-            screen.blit(s, (int(x) - r + shake_offset[0], int(y) - r + shake_offset[1]))
+            spr = self._puff(r, int(110 * life) // 8 * 8)
+            screen.blit(spr, (int(x) - r + shake_offset[0], int(y) - r + shake_offset[1]))
 
     def render(self, screen, shake_offset=(0, 0)):
         self._render_trail(screen, shake_offset)
@@ -687,6 +744,7 @@ class PlayerCar:
         self.color_name = color
         self.w, self.h = CAR_SIZES.get(model, (110, 50))
         self._flap_rate = FLAP_RATE.get(model, 1.0)
+        self.tempo = character_tempo(model)
         self.voice = CHARACTER_VOICE.get(model)
         self._build_surface()
         self._update_rects()

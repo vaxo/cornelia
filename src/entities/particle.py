@@ -1,7 +1,9 @@
 import pygame
 import random
 import math
-from config.constants import SPARK_COLORS, RAIN_COLOR, SCREEN_WIDTH, SCREEN_HEIGHT
+from config.constants import (
+    SPARK_COLORS, RAIN_COLOR, SNOW_COLOR, SCREEN_WIDTH, SCREEN_HEIGHT,
+)
 from src.utils.math_utils import random_range
 
 
@@ -51,6 +53,52 @@ def create_sparks(x, y, count=25):
     return particles
 
 
+# Rain streaks and snow flakes are pre-rendered once per (shape, alpha) and then
+# only blitted. Drawing them straight onto the frame beats compositing a
+# full-screen alpha overlay: a few hundred tiny blits cost ~0.1 ms, the overlay
+# clear + blit cost ~1.4 ms on its own.
+_SPRITES = {}
+_ALPHA_STEPS = 16
+
+
+def _quantize(alpha):
+    a = int(alpha) // _ALPHA_STEPS * _ALPHA_STEPS
+    return max(0, min(255, a))
+
+
+def _convert(surf):
+    try:
+        return surf.convert_alpha()
+    except pygame.error:
+        return surf
+
+
+def _rain_sprite(length, alpha):
+    key = ("r", length, alpha)
+    spr = _SPRITES.get(key)
+    if spr is None:
+        w = max(2, int(length * 0.3) + 2)
+        surf = pygame.Surface((w, length + 2), pygame.SRCALPHA)
+        r, g, b = RAIN_COLOR
+        pygame.draw.line(surf, (r, g, b, alpha), (w - 1, 0), (0, length), 1)
+        spr = _SPRITES[key] = _convert(surf)
+    return spr
+
+
+def _snow_sprite(radius, alpha):
+    key = ("s", radius, alpha)
+    spr = _SPRITES.get(key)
+    if spr is None:
+        d = radius * 2 + 2
+        surf = pygame.Surface((d, d), pygame.SRCALPHA)
+        r, g, b = SNOW_COLOR
+        pygame.draw.circle(surf, (r, g, b, alpha), (d // 2, d // 2), radius)
+        if radius > 1:      # soft halo so the flake doesn't look like a dot
+            pygame.draw.circle(surf, (r, g, b, alpha // 3), (d // 2, d // 2), radius + 1, 1)
+        spr = _SPRITES[key] = _convert(surf)
+    return spr
+
+
 class RainParticle:
     def __init__(self):
         self.reset()
@@ -68,19 +116,38 @@ class RainParticle:
         if self.y > SCREEN_HEIGHT + 20:
             self.reset(start_y=True)
 
-    def render(self, surface, wind=0):
-        end_x = int(self.x - self.length * 0.3 + wind)
-        end_y = int(self.y + self.length)
-        try:
-            r, g, b = RAIN_COLOR
-            pygame.draw.line(
-                surface, (r, g, b, self.alpha),
-                (int(self.x), int(self.y)),
-                (end_x, end_y), 1,
-            )
-        except Exception:
-            pygame.draw.line(
-                surface, RAIN_COLOR,
-                (int(self.x), int(self.y)),
-                (end_x, end_y), 1,
-            )
+    def render(self, surface, intensity=1.0):
+        spr = _rain_sprite(self.length, _quantize(self.alpha * intensity))
+        surface.blit(spr, (int(self.x) - spr.get_width() + 1, int(self.y)))
+
+
+class SnowParticle:
+    """A flake: falls slowly, sways sideways, and drifts with the city breeze."""
+
+    def __init__(self):
+        self.reset()
+        self.y = random.randint(0, SCREEN_HEIGHT)
+
+    def reset(self):
+        self.x = random.uniform(0, SCREEN_WIDTH)
+        self.y = -random.uniform(0, 60)
+        self.size = random.uniform(1.4, 3.6)
+        # Bigger flakes read as nearer, so they fall faster and brighter.
+        self.speed = 0.7 + self.size * 0.55
+        self.alpha = int(110 + self.size * 38)
+        self.sway = random.uniform(0.25, 0.9)
+        self.phase = random.uniform(0, math.pi * 2)
+
+    def update(self):
+        self.phase += 0.02 + self.sway * 0.01
+        self.y += self.speed
+        self.x += math.sin(self.phase) * self.sway - 0.45
+        if self.y > SCREEN_HEIGHT + 8:
+            self.reset()
+        elif self.x < -8:
+            self.x = SCREEN_WIDTH + 6
+
+    def render(self, surface, intensity=1.0):
+        spr = _snow_sprite(int(self.size), _quantize(self.alpha * intensity))
+        d = spr.get_width() // 2
+        surface.blit(spr, (int(self.x) - d, int(self.y) - d))

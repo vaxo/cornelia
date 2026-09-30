@@ -2,10 +2,10 @@ import pygame
 from src.screens.base_screen import BaseScreen
 from src.ui.button import Button
 from src.ui.icons import draw_left_arrow, draw_right_arrow
-from src.entities.player_car import PlayerCar
+from src.entities.player_car import PlayerCar, tempo_label
 from config.constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, BTN_W, BTN_H,
-    UI_TEXT, UI_GOLD, UI_ACCENT, UI_TEXT_DIM,
+    UI_TEXT, UI_GOLD, UI_ACCENT, UI_TEXT_DIM, UI_ACCENT2,
     CAR_PALETTE, CAR_MODEL_NAMES, CAR_MODEL_DISPLAY,
     SUBTITLE_FONT_SIZE, BTN_FONT_SIZE,
 )
@@ -99,6 +99,14 @@ class CarSelectionScreen(BaseScreen):
 
         # Preview panel
         px, py = SCREEN_WIDTH // 2 - 220, SCREEN_HEIGHT // 2 - 160
+
+        # Pace / difficulty for this character, above the panel - big bodies get
+        # a slower world, small ones a faster one, and the points follow.
+        if self._preview:
+            tempo = self._preview.tempo
+            pace = self.assets.render_text(
+                f"{tempo_label(tempo)}   ·   ქულა x{tempo:.2f}", 28, UI_ACCENT2)
+            surface.blit(pace, (SCREEN_WIDTH // 2 - pace.get_width() // 2, py - 52))
         panel = pygame.Rect(px, py, 440, 200)
         pygame.draw.rect(surface, (20, 28, 60), panel, border_radius=14)
         pygame.draw.rect(surface, UI_ACCENT, panel, 2, border_radius=14)
@@ -119,6 +127,8 @@ class CarSelectionScreen(BaseScreen):
         # Color name
         cn = self.assets.render_text(self.current_color(), SUBTITLE_FONT_SIZE, UI_TEXT_DIM)
         surface.blit(cn, (SCREEN_WIDTH // 2 - cn.get_width() // 2, py + 260))
+
+
 
         for btn in [self.btn_prev_car, self.btn_next_car, self.btn_prev_col,
                     self.btn_next_col, self.btn_select, self.btn_back]:

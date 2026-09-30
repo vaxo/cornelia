@@ -36,18 +36,32 @@ OBSTACLE_STRIPE = (88, 93, 105)
 GROUND_COLOR = (18, 22, 45)
 GROUND_LINE = (30, 38, 70)
 
-# Day mode (daytime city with sun)
-SKY_TOP_DAY = (92, 158, 228)
-SKY_BOT_DAY = (196, 224, 246)
-BUILDING_FAR_DAY = (150, 172, 202)
-BUILDING_MID_DAY = (128, 152, 186)
-BUILDING_NEAR_DAY = (104, 130, 168)
-WINDOW_DAY_LIT = (222, 238, 250)     # glass catching the light
-WINDOW_DAY_OFF = (78, 104, 140)
-GROUND_COLOR_DAY = (70, 82, 108)
-GROUND_LINE_DAY = (110, 124, 156)
-SUN_CORE = (255, 246, 205)
-SUN_GLOW = (255, 224, 140)
+# Clouds (night sky)
+CLOUD_BASE = (54, 64, 102)       # body of the cloud
+CLOUD_LIT = (116, 132, 180)      # moon-lit crown
+CLOUD_COUNT = 10
+MOON_CORE = (238, 242, 255)
+MOON_GLOW = (150, 170, 225)
+
+# Snow
+SNOW_COUNT = 340
+SNOW_COLOR = (232, 240, 255)
+SNOW_CAP = (226, 236, 252)       # snow settling on the rooftops
+
+# Weather pacing. Weather holds for a long stretch and then CROSSFADES into the
+# next kind over WEATHER_FADE_MS - nothing ever pops in or out.
+WEATHER_HOLD_MIN = 48000
+WEATHER_HOLD_MAX = 88000
+WEATHER_FADE_MS = 4200
+
+# Rooftop christmas trees - only lit while it snows.
+TREE_GREEN = (26, 82, 50)
+TREE_GREEN_LIT = (58, 138, 86)
+TREE_TRUNK = (78, 54, 32)
+TREE_GLOW = (140, 255, 198)
+TREE_STAR = (255, 224, 130)
+TREE_BAUBLES = [(255, 120, 110), (255, 214, 120), (130, 205, 255), (200, 150, 255)]
+TREE_CHANCE = 0.40               # share of near/mid buildings that get one
 
 # Car
 CAR_WINDOW = (90, 130, 195)

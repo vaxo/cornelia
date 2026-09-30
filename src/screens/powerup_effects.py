@@ -40,6 +40,7 @@ class PowerupEffectsMixin:
     INVULN_MS = 1300
     FLASH_MS = 400
     SLOWMO_FACTOR = 0.55
+    TEMPO_FLOOR = 0.45    # slowest the world may ever run (character x slow-mo)
 
     def init_effects(self):
         # Held helpers, fired on keypress (not auto-used on pickup).
@@ -94,6 +95,12 @@ class PowerupEffectsMixin:
 
     def effect_speed_mult(self):
         return self.SLOWMO_FACTOR if self.slowmo_timer > 0 else 1.0
+
+    def world_tempo(self):
+        """How fast the world runs right now: the character's own pace times any
+        slow-mo, floored so the two can never stack into a crawl."""
+        tempo = getattr(self.car, "tempo", 1.0) * self.effect_speed_mult()
+        return max(self.TEMPO_FLOOR, tempo)
 
     def effect_score_mult(self):
         return 2 if self.score2x_timer > 0 else 1

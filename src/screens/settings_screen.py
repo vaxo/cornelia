@@ -18,7 +18,7 @@ class SettingsScreen(BaseScreen):
         y_nextsong = 400
         self._y_sfx = 500        # sfx volume row center
         y_full = 600
-        y_day = 675
+        y_fps = 675
         y_back = 775
 
         self.btn_sound      = Button(cx, self._y_sound, BTN_W, BTN_H, "", self.assets)
@@ -28,13 +28,13 @@ class SettingsScreen(BaseScreen):
         self.btn_sfx_down   = Button(cx - 170, self._y_sfx, 72, BTN_H, "−", self.assets, font_size=48)
         self.btn_sfx_up     = Button(cx + 170, self._y_sfx, 72, BTN_H, "+", self.assets, font_size=48)
         self.btn_fullscreen = Button(cx, y_full, BTN_W, BTN_H, "", self.assets)
-        self.btn_daymode    = Button(cx, y_day, BTN_W, BTN_H, "", self.assets)
+        self.btn_fps        = Button(cx, y_fps, BTN_W, BTN_H, "", self.assets)
         self.btn_back       = Button(cx, y_back, BTN_W, BTN_H, "უკან", self.assets)
 
         self._all = [
             self.btn_sound, self.btn_music_down, self.btn_music_up, self.btn_nextsong,
             self.btn_sfx_down, self.btn_sfx_up,
-            self.btn_fullscreen, self.btn_daymode, self.btn_back,
+            self.btn_fullscreen, self.btn_fps, self.btn_back,
         ]
 
     def _sound_text(self):
@@ -43,8 +43,8 @@ class SettingsScreen(BaseScreen):
     def _fullscreen_text(self):
         return "ეკრანი: სრული" if self.save.settings.fullscreen else "ეკრანი: ფანჯარა"
 
-    def _daymode_text(self):
-        return "რეჟიმი: დღე" if self.save.settings.day_mode else "რეჟიმი: ღამე"
+    def _fps_text(self):
+        return "FPS: ჩართული" if self.save.settings.show_fps else "FPS: გამორთული"
 
     def _pct(self, v):
         return int(round(v * 100))
@@ -80,9 +80,9 @@ class SettingsScreen(BaseScreen):
             if self.btn_fullscreen.handle_event(event):
                 self.audio.play_sfx("click")
                 self.game.toggle_fullscreen()
-            if self.btn_daymode.handle_event(event):
+            if self.btn_fps.handle_event(event):
                 self.audio.play_sfx("click")
-                self.save.settings.day_mode = not self.save.settings.day_mode
+                self.save.settings.show_fps = not self.save.settings.show_fps
                 self.save.save_settings()
             if self.btn_back.handle_event(event):
                 self.audio.play_sfx("click")
@@ -91,7 +91,7 @@ class SettingsScreen(BaseScreen):
     def update(self, dt):
         self.btn_sound.text = self._sound_text()
         self.btn_fullscreen.text = self._fullscreen_text()
-        self.btn_daymode.text = self._daymode_text()
+        self.btn_fps.text = self._fps_text()
 
     def _render_vol_row(self, surface, cx, label, cy, value, down_btn, up_btn):
         lbl = self.assets.render_text(label, SUBTITLE_FONT_SIZE, UI_TEXT)
@@ -115,5 +115,5 @@ class SettingsScreen(BaseScreen):
         self._render_vol_row(surface, cx, "ეფექტების ხმა", self._y_sfx,
                              self.save.settings.sfx_volume, self.btn_sfx_down, self.btn_sfx_up)
         self.btn_fullscreen.render(surface)
-        self.btn_daymode.render(surface)
+        self.btn_fps.render(surface)
         self.btn_back.render(surface)

@@ -33,7 +33,25 @@ python3 main.py
 - **Endless** — run until you crash, chasing a high score.
 
 Along the way there are power-ups (shield, slow-motion, score multiplier),
-weather effects, day/night backgrounds, and selectable cars and colors.
+weather, and selectable characters and colors.
+
+## Weather
+
+Rain, fog, storm and **snow**. A kind of weather holds for roughly a minute and
+then *crossfades* into the next one over about four seconds — the rain thins out
+as the snow starts drifting in, nothing ever pops. While it snows, the rooftops
+gather snow and little christmas trees light up on them with a glowing border.
+Soft cumulus drift across the night sky and thicken as the weather closes in.
+
+## Difficulty follows the character
+
+Characters are not resized to balance them — a big character stays big. What
+changes is the pace of the world around it. Bulky characters (Bibble, the hen)
+fill more of the gap, so the world runs slower for them and gates arrive further
+apart in time; small quick ones (the chick) get a faster, twitchier world. The
+layout is identical either way — only the time you get to read it changes — and
+the points a gate is worth follow the same number, so the quick characters pay
+out more. The character-select screen shows each one's pace and multiplier.
 
 ## Project layout
 

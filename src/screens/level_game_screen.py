@@ -53,7 +53,7 @@ class LevelGameScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         model = self.save.selected_car
         color = self.save.selected_color
         self.car = PlayerCar(model, color)
-        self.bg = BackgroundManager(day=self.save.settings.day_mode)
+        self.bg = BackgroundManager()
         self.obs_mgr = ObstacleManager()
         self.score_mgr = ScoreManager()
         self.diff_mgr = DifficultyManager()
@@ -89,7 +89,7 @@ class LevelGameScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         self.obs_mgr.reset(gap=gap, spawn_interval=interval, use_moving=use_moving)
         self.score_mgr.reset(best=self.save.high_score)
         self.powerup_mgr.reset(enabled=True)
-        self.weather.randomize()
+        self.weather.randomize(instant=True)
         self.audio.play_music()
 
     def _get_shake(self):
@@ -144,12 +144,14 @@ class LevelGameScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         if not self._started or self._dead or self._finished:
             return
 
-        speed = self.diff_mgr.get_speed() * self.effect_speed_mult()
+        tempo = self.world_tempo()
+        speed = self.diff_mgr.get_speed() * tempo
 
-        self.bg.update(speed)
+        self.bg.set_weather(self.weather.snow_level(), self.weather.overcast())
+        self.bg.update(speed, dt)
         self.car.update(dt)
         self.tick_voice(dt, self.car)
-        self.obs_mgr.update(dt, speed, self.effect_speed_mult())
+        self.obs_mgr.update(dt, speed, tempo)
         self.powerup_mgr.update(dt, speed, self.obs_mgr)
         self.weather.update(dt)
 
@@ -174,7 +176,7 @@ class LevelGameScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         passed = self.obs_mgr.check_passed(self.car.x + self.car.w)
         for _ in range(passed):
             # Scoring a gate is silent on purpose - no chime on every pass
-            self.score_mgr.on_pass(self.effect_score_mult())
+            self.score_mgr.on_pass(self.effect_score_mult() * self.car.tempo)
 
         if not self.is_invulnerable() and (
                 CollisionManager.check_obstacle(self.car, self.obs_mgr) or

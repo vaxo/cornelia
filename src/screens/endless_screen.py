@@ -29,7 +29,7 @@ class EndlessScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         model = self.save.selected_car
         color = self.save.selected_color
         self.car = PlayerCar(model, color)
-        self.bg = BackgroundManager(day=self.save.settings.day_mode)
+        self.bg = BackgroundManager()
         self.obs_mgr = ObstacleManager()
         self.score_mgr = ScoreManager()
         self.diff_mgr = DifficultyManager()
@@ -53,7 +53,7 @@ class EndlessScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         self.obs_mgr.reset()
         self.diff_mgr.reset()
         self.powerup_mgr.reset(enabled=True)
-        self.weather.randomize()
+        self.weather.randomize(instant=True)
         self.audio.play_music()
 
     def _get_shake(self):
@@ -108,13 +108,17 @@ class EndlessScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         use_moving = self.diff_mgr.has_moving_obstacles_endless(score)
         self.obs_mgr.set_params(gap, interval, use_moving)
 
-        # Slow-mo power-up scales the whole world speed
-        speed *= self.effect_speed_mult()
+        # The world's pace = this character's tempo x any slow-mo. Both the
+        # scroll speed and the spawn cadence are scaled by it, so the layout
+        # stays identical and only the time you get to read it changes.
+        tempo = self.world_tempo()
+        speed *= tempo
 
-        self.bg.update(speed)
+        self.bg.set_weather(self.weather.snow_level(), self.weather.overcast())
+        self.bg.update(speed, dt)
         self.car.update(dt)
         self.tick_voice(dt, self.car)
-        self.obs_mgr.update(dt, speed, self.effect_speed_mult())
+        self.obs_mgr.update(dt, speed, tempo)
         self.powerup_mgr.update(dt, speed, self.obs_mgr)
         self.weather.update(dt)
 
@@ -124,7 +128,7 @@ class EndlessScreen(CharacterVoiceMixin, PowerupEffectsMixin, BaseScreen):
         passed = self.obs_mgr.check_passed(self.car.x + self.car.w)
         for _ in range(passed):
             # Scoring a gate is silent on purpose - no chime on every pass
-            self.score_mgr.on_pass(self.effect_score_mult())
+            self.score_mgr.on_pass(self.effect_score_mult() * self.car.tempo)
 
         if not self.is_invulnerable() and (
                 CollisionManager.check_obstacle(self.car, self.obs_mgr) or

@@ -81,8 +81,10 @@ class Game:
             self.scene.handle_events(events)
             self.scene.update(dt)
             self.scene.render(self.screen)
-            fps_surf = self.assets.render_text(f"FPS: {int(self.clock.get_fps())}", 22, (255, 255, 255))
-            self.screen.blit(fps_surf, (8, 8))
+            if self.save.settings.show_fps:
+                fps_surf = self.assets.render_text(
+                    f"FPS: {int(self.clock.get_fps())}", 22, (255, 255, 255))
+                self.screen.blit(fps_surf, (8, 8))
             self.display.present()
         pygame.quit()
         sys.exit()

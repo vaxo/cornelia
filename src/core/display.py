@@ -9,10 +9,14 @@ events into logical coordinates for us, so hit-testing needs no adjustment.
 On desktops smaller than 1920x1080 (e.g. a Retina MacBook's 1470x956 *points*)
 a SCALED *window* would overflow, so we automatically go fullscreen there.
 
-Scenes draw onto an off-screen 24-bit canvas (no alpha channel, so translucent
-effects — sun glow, clouds, fog, rain, lightning, menu glows — blend into opaque
-pixels instead of punching holes). Each frame the canvas is blitted to the
-display surface, post-processed (bloom + vignette), and flipped.
+Scenes draw onto an off-screen canvas that has **no alpha channel** (so
+translucent effects — clouds, fog, rain, snow, lightning, menu glows — blend
+into opaque pixels instead of punching holes) but is kept in the *display's*
+32-bit pixel format. That last part matters a lot: blitting a per-pixel-alpha
+surface onto a 24-bit target makes SDL convert every pixel by hand (~5.5 ms for
+one full-screen overlay), while the same blit onto a display-format 32-bit
+target takes ~0.8 ms. Each frame the canvas is blitted to the display surface,
+post-processed (bloom + vignette), and flipped.
 """
 import pygame
 
@@ -29,7 +33,15 @@ class Display:
         self._vignette = self._make_vignette(logical_w, logical_h)
 
         self._build()
-        self.canvas = pygame.Surface((logical_w, logical_h), 0, 24)
+        self.canvas = self._make_canvas()
+
+    def _make_canvas(self):
+        """Display-format canvas without an alpha channel (see module docstring)."""
+        surf = pygame.Surface((self.lw, self.lh))
+        try:
+            return surf.convert()
+        except pygame.error:
+            return surf
 
     def _make_vignette(self, w, h):
         import math
@@ -63,6 +75,9 @@ class Display:
     def toggle_fullscreen(self):
         self.fullscreen = not self.fullscreen
         self._build()
+        # The window's pixel format can change with the mode, so re-make the
+        # canvas in the new format (a mismatched canvas blits slowly).
+        self.canvas = self._make_canvas()
         return self.fullscreen
 
     def present(self):

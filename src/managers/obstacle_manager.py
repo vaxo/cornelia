@@ -17,6 +17,7 @@ class ObstacleManager:
         self._gap = 265
         self._use_moving = False
         self._last_gap_y = None
+        self._time_scale = 1.0
 
     def reset(self, gap=None, spawn_interval=None, use_moving=False):
         self.obstacles.clear()
@@ -34,6 +35,7 @@ class ObstacleManager:
         self._use_moving = use_moving
 
     def update(self, dt, game_speed, time_scale=1.0):
+        self._time_scale = max(0.1, time_scale)
         # time_scale (<1 during slow-mo) also slows the spawn cadence and the
         # moving obstacles' bobbing, so the whole world slows together.
         self._spawn_timer += dt * time_scale
@@ -60,7 +62,11 @@ class ObstacleManager:
     def _reachable_delta(self):
         """Max vertical gap-to-gap jump the car can still make in time."""
         frame_ms = 1000.0 / FPS
-        frames_between = self._spawn_interval / frame_ms
+        # The spawn timer advances at dt * time_scale, so the REAL time between
+        # two gates is interval / time_scale. A fast character therefore gets
+        # fewer frames to climb than the raw interval suggests - ignoring that
+        # would hand it jumps it cannot make.
+        frames_between = self._spawn_interval / self._time_scale / frame_ms
         return max(MIN_REACHABLE_DELTA, REACHABLE_VSPEED * frames_between)
 
     def _pick_gap_y(self, moving):
