@@ -89,3 +89,11 @@ recreated with defaults on first run.
 
 The tracks under `assets/audio/music/` are third-party music included for local
 playback during development and are **not** covered by this repository's license.
+
+`assets/audio/sfx/dog_bark.wav` (the Dalmatian's voice) is the first 3 seconds
+of a "Small Dog Barking" sound effect supplied by the project owner; check its
+license before distributing a build.
+
+`assets/audio/sfx/sun_yawn.wav` (the Sun's voice) is 0:06–0:07 of a meme
+sound compilation supplied by the project owner; check its license before
+distributing a build.

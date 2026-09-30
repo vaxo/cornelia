@@ -56,6 +56,8 @@ class AudioManager:
             "extra_life": "extra_life.wav",
             "chicken": "chicken.wav",
             "chick": "chick.wav",
+            "sun": "sun_yawn.wav",
+            "dog": "dog_bark.wav",
             "engine": "engine_loop.ogg",
         }
         for key, fname in sfx_files.items():

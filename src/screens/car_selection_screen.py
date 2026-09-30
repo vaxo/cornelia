@@ -121,7 +121,12 @@ class CarSelectionScreen(BaseScreen):
 
         # Model name
         model_name = CAR_MODEL_DISPLAY.get(self.current_model(), self.current_model())
-        mn = self.assets.render_text(model_name, 42, UI_TEXT, bold=True)
+        # Long names (დალმატინელი) shrink so they stay clear of the arrow buttons
+        size = 42
+        mn = self.assets.render_text(model_name, size, UI_TEXT, bold=True)
+        while mn.get_width() > 260 and size > 26:
+            size -= 2
+            mn = self.assets.render_text(model_name, size, UI_TEXT, bold=True)
         surface.blit(mn, (SCREEN_WIDTH // 2 - mn.get_width() // 2, py + 210))
 
         # Color name

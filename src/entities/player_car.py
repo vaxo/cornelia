@@ -21,6 +21,8 @@ CAR_SIZES = {
     "bibble": (120, 100),
     "chicken": (112, 90),
     "chick": (82, 72),
+    "sun": (92, 92),
+    "dalmatian": (120, 78),
 }
 
 # Characters with a voice call out on a timer while you fly (see
@@ -28,6 +30,8 @@ CAR_SIZES = {
 CHARACTER_VOICE = {
     "chicken": "chicken",
     "chick": "chick",
+    "sun": "sun",
+    "dalmatian": "dog",
 }
 
 # How fast each flapping character beats, relative to the base flap rate.
@@ -36,6 +40,8 @@ FLAP_RATE = {
     "bibble": 1.0,
     "chicken": 1.6,
     "chick": 2.3,
+    "sun": 0.8,         # the rays breathe slowly
+    "dalmatian": 1.4,   # ears flap, legs paddle, head bobs, tail wags
 }
 
 # --- how hard the game runs for each character -----------------------------
@@ -47,9 +53,11 @@ FLAP_RATE = {
 # worth, so the quicker characters pay out more.
 CHARACTER_TEMPO = {
     "bibble": 0.85,   # biggest body (120x100) - slowest, most forgiving
+    "sun": 0.88,      # big round body (92x92) - slow, easy
     "chicken": 0.90,
     "hero": 0.93,
     "camry": 1.00,    # reference
+    "dalmatian": 1.00,
     "retro": 1.00,
     "plane": 1.05,
     "rocket": 1.08,
@@ -98,6 +106,8 @@ class PlayerCar:
             "bibble": (200, 240, 255),
             "chicken": (255, 238, 205),
             "chick": (255, 246, 200),
+            "sun": (255, 214, 110),
+            "dalmatian": (236, 238, 246),
         }.get(model, (150, 180, 240))
         self._flap_rate = FLAP_RATE.get(model, 1.0)
         self.tempo = character_tempo(model)       # world pace for this character
@@ -123,6 +133,8 @@ class PlayerCar:
             "bibble": self._draw_bibble,
             "chicken": self._draw_chicken,
             "chick": self._draw_chick,
+            "sun": self._draw_sun,
+            "dalmatian": self._draw_dalmatian,
         }
         flap_drawer = flap_drawers.get(self.model)
         if flap_drawer:
@@ -639,6 +651,231 @@ class PlayerCar:
         # --- near wing ---
         self._draw_bird_wing(surf, (cx + int(w * 0.10), cy - int(h * 0.04)),
                              wing_len, ang_near, wing_col, wing_dark, 3)
+
+    def _draw_sun(self, surf, w, h, face, rays, freckle, ray_t=0.0):
+        """Smiling freckled sun, front-on. `ray_t` in [-1, 1] makes the rays
+        breathe: the long and short rays pulse against each other and the whole
+        crown rocks a little, so it reads as alive without anything leaving the
+        wxh canvas."""
+        cx, cy = w // 2, h // 2
+        R = int(min(w, h) * 0.33)
+        face_hi = tuple(min(255, c + 26) for c in face)
+        rays_dark = tuple(max(0, c - 40) for c in rays)
+
+        # --- rays: 12 spikes, long and short alternating ---
+        rot = ray_t * 0.10
+        half = math.pi / 12 * 0.55
+        for i in range(12):
+            a = rot + 2 * math.pi * i / 12
+            if i % 2 == 0:
+                tip_r = R * (1.42 + ray_t * 0.05)
+            else:
+                tip_r = R * (1.22 - ray_t * 0.04)
+            base_r = R * 0.92
+            pygame.draw.polygon(surf, rays, [
+                (cx + math.cos(a - half) * base_r, cy + math.sin(a - half) * base_r),
+                (cx + math.cos(a) * tip_r, cy + math.sin(a) * tip_r),
+                (cx + math.cos(a + half) * base_r, cy + math.sin(a + half) * base_r)])
+
+        # --- face disc with a warm rim and a soft top-left highlight ---
+        pygame.draw.circle(surf, rays, (cx, cy), int(R * 1.06))
+        pygame.draw.circle(surf, face, (cx, cy), R)
+        pygame.draw.circle(surf, face_hi, (cx - int(R * 0.22), cy - int(R * 0.26)), int(R * 0.52))
+
+        # --- rosy cheeks with freckles sprinkled over them ---
+        fr = 2
+        for sx in (-1, 1):
+            chx, chy = cx + sx * int(R * 0.62), cy + int(R * 0.16)
+            pygame.draw.circle(surf, (255, 146, 120), (chx, chy), int(R * 0.18))
+            for fx, fy in ((-0.16, -0.12), (0.04, -0.20), (0.18, -0.02),
+                           (-0.04, 0.08)):
+                pygame.draw.circle(surf, freckle,
+                                   (chx + sx * int(R * fx), chy + int(R * fy)), fr)
+        # a couple across the bridge of the nose too
+        for fx, fy in ((-0.12, 0.04), (0.12, 0.04)):
+            pygame.draw.circle(surf, freckle, (cx + int(R * fx), cy + int(R * fy)), fr)
+
+        # --- big sparkly eyes with lashes ---
+        ew, eh = int(R * 0.42), int(R * 0.54)
+        for sx in (-1, 1):
+            ex, ey = cx + sx * int(R * 0.34), cy - int(R * 0.22)
+            pygame.draw.ellipse(surf, (255, 255, 255), (ex - ew // 2, ey - eh // 2, ew, eh))
+            pygame.draw.circle(surf, (58, 40, 30), (ex, ey + int(eh * 0.08)), int(ew * 0.40))
+            pygame.draw.circle(surf, (18, 14, 12), (ex, ey + int(eh * 0.08)), int(ew * 0.22))
+            pygame.draw.circle(surf, (255, 255, 255),
+                               (ex - int(ew * 0.14), ey - int(eh * 0.08)), max(2, int(ew * 0.16)))
+            pygame.draw.circle(surf, (255, 255, 255),
+                               (ex + int(ew * 0.14), ey + int(eh * 0.22)), max(1, int(ew * 0.07)))
+            pygame.draw.ellipse(surf, rays_dark, (ex - ew // 2, ey - eh // 2, ew, eh), 2)
+            # two lashes flicking out from the outer corner
+            for lx, ly in ((0.78, -0.10), (0.66, -0.34)):
+                pygame.draw.line(surf, rays_dark,
+                                 (ex + sx * int(ew * 0.46), ey + int(eh * (ly + 0.08))),
+                                 (ex + sx * int(ew * lx), ey + int(eh * (ly - 0.06))), 2)
+
+        # --- brown sunglasses. The tinted lenses are drawn on their own surface
+        # and BLITTED on, since pygame.draw would overwrite the face's alpha
+        # instead of blending - this way the eyes still show through. ---
+        frame_col = (74, 40, 18)
+        lw, lh = int(R * 0.60), int(R * 0.50)
+        lenses = []
+        for sx in (-1, 1):
+            lx = cx + sx * int(R * 0.34) - lw // 2
+            ly = cy - int(R * 0.22) - lh // 2
+            lenses.append(pygame.Rect(lx, ly, lw, lh))
+        tint = pygame.Surface((w, h), pygame.SRCALPHA)
+        for rect in lenses:
+            pygame.draw.ellipse(tint, (110, 60, 26, 150), rect)
+        surf.blit(tint, (0, 0))
+        for sx, rect in zip((-1, 1), lenses):
+            pygame.draw.ellipse(surf, frame_col, rect, 3)
+            # arm running back to the edge of the face
+            edge = rect.right if sx > 0 else rect.left
+            pygame.draw.line(surf, frame_col, (edge, rect.top + lh // 3),
+                             (cx + sx * int(R * 0.96), rect.top + lh // 4), 3)
+            # glint on the upper-left of each lens
+            pygame.draw.line(surf, (255, 240, 220),
+                             (rect.left + lw // 4, rect.top + lh // 3),
+                             (rect.left + lw // 2 - 1, rect.top + lh // 5), 2)
+        pygame.draw.line(surf, frame_col, (lenses[0].right - 2, lenses[0].top + lh // 3),
+                         (lenses[1].left + 2, lenses[1].top + lh // 3), 3)   # bridge
+
+        # --- wide open smile: teeth on top, tongue at the bottom ---
+        my = cy + int(R * 0.30)
+        a, b = R * 0.38, R * 0.36
+        mouth = [(cx + a * math.cos(t), my + b * math.sin(t))
+                 for t in (math.pi * k / 16 for k in range(17))]
+        pygame.draw.polygon(surf, (132, 40, 38), mouth)
+        pygame.draw.ellipse(surf, (248, 118, 128),
+                            (cx - int(a * 0.48), my + int(b * 0.46), int(a * 0.96), int(b * 0.46)))
+        pygame.draw.rect(surf, (255, 255, 255),
+                         (cx - int(a * 0.62), my, int(a * 1.24), max(2, int(b * 0.20))),
+                         border_bottom_left_radius=3, border_bottom_right_radius=3)
+        pygame.draw.polygon(surf, rays_dark, mouth, 2)
+
+    def _draw_dalmatian(self, surf, w, h, fur, spot, collar, flap_t=0.0):
+        """Side-on flying dalmatian puppy facing right: white with black spots,
+        red collar, black floppy ears. `flap_t` in [-1, 1] drives the whole
+        doggy-paddle: ears flap like wings, legs stride with a knee bend, the
+        head bobs and nods against the body, the tail wags and the tongue
+        flutters in the wind."""
+        fur_dark = tuple(max(0, c - 38) for c in fur)
+        fur_hi = tuple(min(255, c + 8) for c in fur)
+        spot_far = tuple(min(255, c + 30) for c in spot)
+
+        # the body rises a touch on the down-stroke; the head lags behind it and
+        # bobs the other way, so the neck visibly works
+        bob = int(flap_t * h * 0.025)
+        cx, cy = int(w * 0.40), int(h * 0.55) - bob
+        bw, bh = int(w * 0.50), int(h * 0.40)
+        hx, hy = int(w * 0.72) + int(flap_t * w * 0.012), int(h * 0.31) + int(flap_t * h * 0.045)
+        hr = int(w * 0.17)
+        leg_l = int(h * 0.12)          # per segment - thigh and shin
+        leg_w = max(5, int(w * 0.06))
+
+        def leg(hip, ang, bend, col):
+            # ang: thigh angle, 0 = straight down, positive = reaching forward (+x).
+            # bend: how far the shin folds back from the thigh at the knee.
+            knee = (hip[0] + int(math.sin(ang) * leg_l), hip[1] + int(math.cos(ang) * leg_l))
+            shin = ang - bend
+            foot = (knee[0] + int(math.sin(shin) * leg_l), knee[1] + int(math.cos(shin) * leg_l))
+            pygame.draw.line(surf, col, hip, knee, leg_w)
+            pygame.draw.circle(surf, col, knee, leg_w // 2)
+            pygame.draw.line(surf, col, knee, foot, leg_w - 1)
+            pygame.draw.ellipse(surf, col, (foot[0] - leg_w + 1, foot[1] - leg_w // 2,
+                                            leg_w * 2, leg_w))
+
+        def ear(pivot, ang, col):
+            # a long floppy teardrop hanging from `pivot`; ang swings the tip back/up
+            px, py = pivot
+            ca, sa = math.cos(ang), math.sin(ang)
+            pts = [(-0.26, 0.0), (0.26, 0.0), (0.36, 0.80), (0.14, 1.20),
+                   (-0.14, 1.22), (-0.34, 0.86)]
+            pygame.draw.polygon(surf, col, [
+                (px + (x * ca - y * sa) * hr, py + (x * sa + y * ca) * hr) for x, y in pts])
+
+        hip_f = (cx + int(bw * 0.30), cy + int(bh * 0.28))
+        hip_b = (cx - int(bw * 0.30), cy + int(bh * 0.28))
+
+        # --- far legs and far ear (behind, a shade darker for depth) ---
+        # Stride: the pairs swing in opposition (a paddling gallop); a leg folds
+        # its knee most while it swings back, and straightens as it reaches.
+        stride = 0.55
+        leg((hip_f[0] - 4, hip_f[1] - 2), 0.60 - flap_t * stride, 0.55 + flap_t * 0.45, fur_dark)
+        leg((hip_b[0] - 4, hip_b[1] - 2), -0.50 + flap_t * stride, -0.35 - flap_t * 0.30, fur_dark)
+        ear((hx + int(hr * 0.10), hy - int(hr * 0.78)), 0.50 + flap_t * 0.50, spot_far)
+
+        # --- wagging tail ---
+        tb = (cx - int(bw * 0.46), cy - int(bh * 0.12))
+        tm = (tb[0] - int(w * 0.07), tb[1] - int(h * 0.08) + int(flap_t * h * 0.04))
+        tt = (tb[0] - int(w * 0.13), tb[1] - int(h * 0.24) + int(flap_t * h * 0.10))
+        pygame.draw.lines(surf, fur, False, [tb, tm, tt], max(4, int(w * 0.05)))
+        pygame.draw.circle(surf, fur, tt, max(2, int(w * 0.022)))
+
+        # --- body + neck ---
+        pygame.draw.ellipse(surf, fur, (cx - bw // 2, cy - bh // 2, bw, bh))
+        pygame.draw.ellipse(surf, fur, (cx + int(bw * 0.12), cy - int(bh * 0.80),
+                                        int(bw * 0.40), int(bh * 0.95)))
+        pygame.draw.ellipse(surf, fur_hi, (cx - int(bw * 0.30), cy - int(bh * 0.40),
+                                           int(bw * 0.60), int(bh * 0.36)))
+
+        # --- body spots (all kept well inside the ellipse) ---
+        for u, v, rf in ((-0.55, -0.20, 0.13), (-0.15, -0.45, 0.11), (0.20, -0.08, 0.15),
+                         (0.50, 0.30, 0.10), (-0.35, 0.40, 0.11), (0.10, 0.55, 0.08),
+                         (-0.70, 0.22, 0.07), (0.45, -0.45, 0.08)):
+            pygame.draw.circle(surf, spot, (cx + int(u * bw / 2), cy + int(v * bh / 2)),
+                               max(2, int(rf * bh)))
+
+        # --- near legs (paddling opposite to the far pair) ---
+        leg(hip_f, 0.60 + flap_t * stride, 0.55 - flap_t * 0.45, fur)
+        leg(hip_b, -0.50 - flap_t * stride, -0.35 + flap_t * 0.30, fur)
+        pygame.draw.circle(surf, spot, (hip_b[0] - 2, hip_b[1] + 2), max(2, leg_w // 2))
+
+        # --- head, muzzle and head spots ---
+        pygame.draw.circle(surf, fur, (hx, hy), hr)
+        pygame.draw.ellipse(surf, fur, (hx + int(hr * 0.15), hy - int(hr * 0.12),
+                                        int(hr * 1.15), int(hr * 0.80)))
+        for u, v, rf in ((-0.50, 0.25, 0.16), (-0.05, -0.62, 0.12), (0.62, -0.50, 0.09)):
+            pygame.draw.circle(surf, spot, (hx + int(u * hr), hy + int(v * hr)),
+                               max(2, int(rf * hr)))
+
+        # --- tongue, then the smile line over it ---
+        tongue_l = hr * (0.50 + 0.14 * flap_t)
+        pygame.draw.ellipse(surf, (242, 110, 128), (hx + int(hr * 0.66) - int(flap_t * hr * 0.06),
+                                                    hy + int(hr * 0.44),
+                                                    int(hr * 0.32), int(tongue_l)))
+        pygame.draw.lines(surf, (40, 30, 34), False, [
+            (hx + int(hr * 1.22), hy + int(hr * 0.32)),
+            (hx + int(hr * 0.98), hy + int(hr * 0.52)),
+            (hx + int(hr * 0.60), hy + int(hr * 0.44))], 2)
+
+        # --- nose ---
+        nx, ny = hx + int(hr * 1.26), hy + int(hr * 0.08)
+        pygame.draw.ellipse(surf, (22, 22, 28), (nx - int(hr * 0.16), ny - int(hr * 0.12),
+                                                 int(hr * 0.32), int(hr * 0.24)))
+        pygame.draw.circle(surf, (120, 120, 132), (nx - int(hr * 0.04), ny - int(hr * 0.05)),
+                           max(1, int(hr * 0.05)))
+
+        # --- big puppy eye with a brow ---
+        ex, ey = hx + int(hr * 0.40), hy - int(hr * 0.22)
+        er = max(3, int(hr * 0.26))
+        pygame.draw.circle(surf, (255, 255, 255), (ex, ey), er)
+        pygame.draw.circle(surf, (20, 18, 22), (ex + int(er * 0.22), ey + int(er * 0.08)),
+                           int(er * 0.70))
+        pygame.draw.circle(surf, (255, 255, 255), (ex + int(er * 0.02), ey - int(er * 0.22)),
+                           max(1, int(er * 0.26)))
+        pygame.draw.arc(surf, (40, 30, 34), (ex - er, ey - int(er * 1.9), er * 2, er * 1.6),
+                        0.5, 2.6, 2)
+
+        # --- collar with a gold tag ---
+        c0 = (hx - int(hr * 0.86), hy + int(hr * 0.40))
+        c1 = (hx - int(hr * 0.20), hy + int(hr * 0.96))
+        pygame.draw.line(surf, collar, c0, c1, max(4, int(hr * 0.26)))
+        pygame.draw.circle(surf, (250, 208, 70), (c1[0] + 1, c1[1] + int(hr * 0.16)),
+                           max(3, int(hr * 0.14)))
+
+        # --- near ear, flapping like a wing ---
+        ear((hx - int(hr * 0.28), hy - int(hr * 0.66)), 0.40 + flap_t * 0.60, spot)
 
     def _update_rects(self):
         # Slightly inset hitbox for fairness

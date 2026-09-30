@@ -1,4 +1,5 @@
-"""Idle character calls: the chicken clucks and the chick peeps while you fly.
+"""Idle character calls: the chicken clucks, the chick peeps,
+the sun yawns and the dalmatian barks while you fly.
 
 Mixed into the two play screens. A character only has a voice if its PlayerCar
 carries a `voice` SFX key (the cars don't), and it only calls out while the run
